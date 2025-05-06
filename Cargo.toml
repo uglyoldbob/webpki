@@ -78,6 +78,7 @@ std = ["alloc", "pki-types/std"]
 
 [dependencies]
 aws-lc-rs = { version = "1.9", optional = true, default-features = false }
+log = "0.4.27"
 pki-types = { package = "rustls-pki-types", version = "1.11", default-features = false }
 ring = { version = "0.17", default-features = false, optional = true }
 untrusted = "0.9"

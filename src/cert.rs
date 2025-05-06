@@ -64,9 +64,18 @@ impl<'a> Cert<'a> {
         tbs.read_all(
             Error::TrailingData(DerTypeId::CertificateTbsCertificate),
             |tbs| {
-                version3(tbs)?;
+                let version = if !tbs.peek(2) {
+                    log::error!("Running version 3");
+                    let _ = version3(tbs);
+                    3
+                }
+                else {
+                    log::error!("Not running version 3");
+                    1
+                };
 
                 let serial = lenient_certificate_serial_number(tbs)?;
+                log::error!("Serial number is {:x?}", serial);
 
                 let signature = der::expect_tag(tbs, der::Tag::Sequence)?;
                 // TODO: In mozilla::pkix, the comparison is done based on the
@@ -75,11 +84,16 @@ impl<'a> Cert<'a> {
                 if !public_values_eq(signature, signed_data.algorithm) {
                     return Err(Error::SignatureAlgorithmMismatch);
                 }
+                log::error!("Checkin 1");
 
                 let issuer = der::expect_tag(tbs, der::Tag::Sequence)?;
+                log::error!("Checkin 2");
                 let validity = der::expect_tag(tbs, der::Tag::Sequence)?;
+                log::error!("Checkin 3");
                 let subject = der::expect_tag(tbs, der::Tag::Sequence)?;
+                log::error!("Checkin 4");
                 let spki = der::expect_tag(tbs, der::Tag::Sequence)?;
+                log::error!("Checkin 5");
 
                 // In theory there could be fields [1] issuerUniqueID and [2]
                 // subjectUniqueID, but in practice there never are, and to keep the
@@ -136,6 +150,7 @@ impl<'a> Cert<'a> {
                         },
                     )?;
                 }
+                log::error!("Checkin 6");
 
                 Ok(cert)
             },
@@ -218,7 +233,8 @@ fn version3(input: &mut untrusted::Reader<'_>) -> Result<(), Error> {
         der::Tag::ContextSpecificConstructed0,
         Error::UnsupportedCertVersion,
         |input| {
-            let version = u8::from_der(input)?;
+            let version = u8::from_der(input);
+            let version = version?;
             if version != 2 {
                 // v3
                 return Err(Error::UnsupportedCertVersion);
